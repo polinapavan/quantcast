@@ -1,9 +1,11 @@
 package org.quantcast.processor;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.params.ParameterizedTest;
+
 class CookiesProcessorTest {
 
-    @org.junit.jupiter.api.Test
+    @ParameterizedTest
     void getMostActiveCookie() {
+        CookiesProcessor.getMostActiveCookie("src/test/resources/cookies.csv", "2018-12-09");
     }
 }
