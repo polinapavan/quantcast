@@ -52,7 +52,7 @@ public class CookiesProcessor {
     private static int binarySearch(List<String> fileLines, LocalDate searchDate) {
         int start = 0;
         int end = fileLines.size() - 1;
-        while (end - start > 1) {
+        while (end - start >= 0) {
             int mid = (end + start) / 2;
             String line = fileLines.get(mid);
             String[] lineSplit = line.split(COMA_DELIMITER);
