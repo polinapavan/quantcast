@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.quantcast.CookieProcessingException;
 
 import java.io.FileNotFoundException;
 import java.time.format.DateTimeParseException;
@@ -27,7 +28,7 @@ class CookiesProcessorTest {
     void testSearchDateNotExist(String fileName, String searchDate) {
         try {
             CookiesProcessor.getMostActiveCookie(fileName, searchDate);
-        } catch (RuntimeException re) {
+        } catch (CookieProcessingException re) {
             Assertions.assertEquals(CookiesProcessor.ERROR_MSG_COOKIE_NOT_FOUND, re.getMessage());
             return;
         } catch (Exception e) {
@@ -41,7 +42,7 @@ class CookiesProcessorTest {
     void testWrongFileName(String fileName) {
         try {
             CookiesProcessor.getMostActiveCookie(fileName, "2018-12-07");
-        } catch (RuntimeException re) {
+        } catch (CookieProcessingException re) {
             Assertions.assertTrue(re.getCause() instanceof FileNotFoundException);
             return;
         } catch (Exception e) {

@@ -1,5 +1,9 @@
 package org.quantcast.processor;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.quantcast.CookieProcessingException;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -12,41 +16,43 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class CookiesProcessor {
-
+    private static Logger logger = LogManager.getLogger(CookiesProcessor.class);
     public static final String COMA_DELIMITER = ",";
     public static final String INPUT_SEARCH_DATE_PATTERN = "yyyy-MM-dd";
     public static final String ERROR_MSG_COOKIE_NOT_FOUND = "No matching cookie found";
 
-    public static List<String> getMostActiveCookie(String fileName, String date) {
+    private CookiesProcessor() {}
+
+    public static List<String> getMostActiveCookie(String fileName, String inputDate) {
         List<String> fileLines = writeFileIntoList(fileName);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(INPUT_SEARCH_DATE_PATTERN);
-        LocalDate searchDate = LocalDate.parse(date, formatter);
+        LocalDate searchDate = LocalDate.parse(inputDate, formatter);
 
         int searchIndex = binarySearch(fileLines, searchDate);
         if (searchIndex == -1) {
-            System.out.println(ERROR_MSG_COOKIE_NOT_FOUND);
-            throw new RuntimeException(ERROR_MSG_COOKIE_NOT_FOUND);
+            logger.error(ERROR_MSG_COOKIE_NOT_FOUND);
+            throw new CookieProcessingException(ERROR_MSG_COOKIE_NOT_FOUND);
         }
         Map<String, Integer> cookieCountMap = new HashMap<>();
         processLinesAroundIndex(fileLines, searchDate, cookieCountMap, searchIndex);
 
-        int maxCount = cookieCountMap.values().stream().max(Comparator.naturalOrder()).get();
-        List<String> activeCookies = cookieCountMap.entrySet().stream().filter(entry -> entry.getValue() == maxCount).collect(Collectors.mapping(Map.Entry::getKey, Collectors.toList()));
-        return activeCookies;
+        Optional<Integer> maxCountOptional = cookieCountMap.values().stream().max(Comparator.naturalOrder());
+        int maxCount = maxCountOptional.isPresent()? maxCountOptional.get() : 1;
+        return cookieCountMap.entrySet().stream().filter(entry -> entry.getValue() == maxCount).collect(Collectors.mapping(Map.Entry::getKey, Collectors.toList()));
     }
 
     private static List<String> writeFileIntoList(String fileName) {
-        try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName));
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName))) {
+            // Considering first line will contain headers, empty reading the first line
             bufferedReader.readLine();
             return bufferedReader.lines().collect(Collectors.toList());
         } catch (FileNotFoundException e) {
-            System.out.println("File not found. " + e.getMessage());
-            throw new RuntimeException(e);
+            logger.error("File not found. {}", e.getMessage());
+            throw new CookieProcessingException(e);
         } catch (IOException e) {
-            System.out.println("Failed to read file. " + e.getMessage());
-            throw new RuntimeException(e);
+            logger.error("Failed to read file. {}", e.getMessage());
+            throw new CookieProcessingException(e);
         }
     }
 
@@ -107,7 +113,7 @@ public class CookiesProcessor {
 
     private static LocalDate getUTCDate(String cookieTimestamp) {
         ZonedDateTime zonedDateTime = ZonedDateTime.parse(cookieTimestamp);
-        zonedDateTime.withZoneSameInstant(ZoneOffset.UTC);
+        zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC);
         return zonedDateTime.toLocalDate();
     }
 }
